@@ -57,6 +57,46 @@ with zero errors before reporting a task as complete.
 - **Security:** rate limiting (`ThrottlerModule`), `ValidationPipe` (whitelist),
   centralized exception filters, and logging live in `main.ts` and `src/common/`.
 
+## Architecture: choosing the right approach
+
+**Default:** simple layered — `Controller → Service → Prisma`. Start here every time.
+Escalate only when a concrete signal demands it; never escalate by anticipation.
+
+### Signals that justify escalating beyond the default
+
+- **Rich domain invariants** that must hold regardless of transport or persistence layer.
+- **DB-free unit testing** of business logic is required (service tests that cannot import Prisma).
+- **Multiple data sources or external integrations** must be orchestrated inside one use case.
+- **Read model diverges** significantly from the write model (shape, aggregation, or source).
+- **Longevity & blast radius:** a throwaway interview task vs. a long-lived production service changes the calculus.
+
+> **Rule of thumb:** YAGNI by default. Add a layer only when one of the signals above is
+> concretely present — not in anticipation of a future need.
+
+### Architecture options
+
+| Approach | Pros | Cons | Use when |
+|---|---|---|---|
+| **Simple layered** (Controller → Service → Prisma) | Fastest; least boilerplate; fits CRUD perfectly | Business logic couples to Prisma; harder to isolate as the service grows | **Default.** CRUD, interview tasks, thin domains. |
+| **Layered + Repository interface** | Mockable data access; cleaner service tests; swappable storage | Extra boilerplate; YAGNI for simple CRUD | Query logic gets complex, or you need to mock the DB cleanly in unit tests. |
+| **Clean / Hexagonal** (ports & adapters) | Framework- and DB-independent domain; use cases are highly testable in isolation | Heavy boilerplate; overkill for CRUD | Rich domain + long-lived service where framework independence pays off. |
+| **DDD tactical** (aggregates, value objects, domain events) | Models complex invariants explicitly; fully encapsulates domain rules | Steep; over-engineering for simple apps | Genuinely complex business rules with strong invariants (e.g. financial, compliance). |
+| **CQRS / event-driven** (`@nestjs/cqrs`) | Scales divergent read/write paths; clear command/query split | Added complexity; eventual-consistency overhead | Read and write models diverge enough that a single model causes friction. |
+
+### Tools to use when making the architecture decision
+
+Before writing any code for a non-trivial feature, invoke one of these explicitly:
+
+| When | Use |
+|---|---|
+| Architecture intent is fuzzy — explore options before committing to one | `superpowers:brainstorming` skill |
+| Want a concrete NestJS architecture proposal or a review of a proposed design | `nestjs-code-architect` agent |
+| Want to weigh trade-offs or ask "is this over-engineering?" | `software-architecture-mentor` agent |
+| Applying Clean / Hexagonal / Onion boundaries and the Dependency Rule | `clean-architecture` skill |
+| Picking a backend pattern (Clean / Hexagonal / DDD) for a service | `architecture-patterns` skill |
+| Grounding the design in SOLID and clean boundaries | `solid` skill |
+| Choosing a concrete design pattern (Strategy, Factory, Observer…) inside the chosen architecture | `design-patterns-mentor` agent |
+
 ## TypeScript coding guidelines
 
 ### Naming
