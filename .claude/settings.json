@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/oscardev/Desktop/cueva-tests/backend-cueva && npm run lint:fix 2>&1"
+          }
+        ]
+      }
+    ]
+  }
+}
