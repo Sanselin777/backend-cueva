@@ -1,7 +1,7 @@
 # CLAUDE.md — backend-cueva
 
 NestJS 11 + TypeScript backend template for technical interviews (Cueva Tech context:
-fintech / prop-trading / EdTech domain). Uses **Prisma** as ORM. Part of a two-repo
+fintech / prop-trading / EdTech domain). Uses **TypeORM** as ORM. Part of a two-repo
 setup (`fronted-cueva` is the companion frontend). **All code and comments in English.**
 
 ## Commands
@@ -14,15 +14,16 @@ npm run test:watch     # unit tests in watch mode
 npm run test:e2e       # end-to-end with Supertest (test/*.e2e-spec.ts)
 npm run lint           # eslint (report only)
 npm run lint:fix       # eslint --fix (auto-fix)
-npx prisma generate    # regenerate Prisma Client after schema changes
-npx prisma migrate dev --name <name>   # create + apply a migration
-npx prisma studio      # open visual DB browser (port 5555)
-npx prisma db push     # push schema without a migration file (prototyping only)
+npm run migration:generate -- src/migrations/<MigrationName>   # generate migration from entity changes
+npm run migration:run      # apply pending migrations
+npm run migration:revert   # revert last migration
+npm run migration:show     # list all migrations and their status
 ```
 
 > **Database:** PostgreSQL `cueva_backend` on `localhost:5432` (user `postgres`, no password).
-> `DATABASE_URL` is set in `.env`. Prisma 7 reads it via `prisma.config.ts`.
-> Prisma Client is generated to `generated/prisma/` — import from there, not from `@prisma/client`.
+> `DATABASE_URL` is set in `.env`. TypeORM reads it via `ConfigService`.
+> Entity files are in `src/modules/<feature>/entities/*.entity.ts`.
+> DataSource config for CLI is at `src/database/data-source.ts`.
 >
 > `main.ts` already has `ValidationPipe` (whitelist + forbidNonWhitelisted + transform),
 > CORS for the frontend dev server, and Swagger at `/api-docs`. Do not reconfigure these.
@@ -36,7 +37,7 @@ with zero errors before reporting a task as complete.
 
 - **Feature modules** under `src/modules/<feature>/` (`entities/`, `dto/`,
   `interfaces/`, service, controller, module). Cross-cutting code under `src/common/`.
-- **Thin controllers** (HTTP only) → **services** (business logic) → **Prisma** for
+- **Thin controllers** (HTTP only) → **services** (business logic) → **TypeORM Repository** for
   data access. Extract a repository layer only when query logic becomes genuinely
   complex (YAGNI).
 - **Exported interfaces/types in `*.interface.ts`** under an `interfaces/` folder —
@@ -45,8 +46,8 @@ with zero errors before reporting a task as complete.
   non-exported types may stay inline.
 - **Money = integer cents.** Store `amountCents: number`; format to display units
   only at the presentation layer. Never use floats for money.
-- **Database schema changes go only through Prisma migrations** — never edit the DB
-  directly. Commit `prisma/schema.prisma` and the generated migration files together.
+- **Database schema changes go only through TypeORM migrations** — never edit the DB
+  directly and NEVER set synchronize: true. Always generate a migration and run it.
 - **Validation:** every request body and query param is validated by a `class-validator`
   DTO. The global `ValidationPipe` is already in `main.ts`; e2e tests must register
   the same pipe manually (AppModule alone does not register it).
@@ -59,13 +60,13 @@ with zero errors before reporting a task as complete.
 
 ## Architecture: choosing the right approach
 
-**Default:** simple layered — `Controller → Service → Prisma`. Start here every time.
+**Default:** simple layered — `Controller → Service → TypeORM Repository`. Start here every time.
 Escalate only when a concrete signal demands it; never escalate by anticipation.
 
 ### Signals that justify escalating beyond the default
 
 - **Rich domain invariants** that must hold regardless of transport or persistence layer.
-- **DB-free unit testing** of business logic is required (service tests that cannot import Prisma).
+- **DB-free unit testing** of business logic is required (service tests that cannot import TypeORM).
 - **Multiple data sources or external integrations** must be orchestrated inside one use case.
 - **Read model diverges** significantly from the write model (shape, aggregation, or source).
 - **Longevity & blast radius:** a throwaway interview task vs. a long-lived production service changes the calculus.
@@ -77,7 +78,7 @@ Escalate only when a concrete signal demands it; never escalate by anticipation.
 
 | Approach | Pros | Cons | Use when |
 |---|---|---|---|
-| **Simple layered** (Controller → Service → Prisma) | Fastest; least boilerplate; fits CRUD perfectly | Business logic couples to Prisma; harder to isolate as the service grows | **Default.** CRUD, interview tasks, thin domains. |
+| **Simple layered** (Controller → Service → TypeORM Repository) | Fastest; least boilerplate; fits CRUD perfectly | Business logic couples to repository; harder to isolate as the service grows | **Default.** CRUD, interview tasks, thin domains. |
 | **Layered + Repository interface** | Mockable data access; cleaner service tests; swappable storage | Extra boilerplate; YAGNI for simple CRUD | Query logic gets complex, or you need to mock the DB cleanly in unit tests. |
 | **Clean / Hexagonal** (ports & adapters) | Framework- and DB-independent domain; use cases are highly testable in isolation | Heavy boilerplate; overkill for CRUD | Rich domain + long-lived service where framework independence pays off. |
 | **DDD tactical** (aggregates, value objects, domain events) | Models complex invariants explicitly; fully encapsulates domain rules | Steep; over-engineering for simple apps | Genuinely complex business rules with strong invariants (e.g. financial, compliance). |
@@ -153,7 +154,7 @@ Before writing any code for a non-trivial feature, invoke one of these explicitl
 ## Testing
 
 - **TDD for domain/business logic**: test-first, pure functions with no framework imports.
-- Unit tests mock the Prisma service with `jest.fn()` or a fake in-memory store.
+- Unit tests mock the TypeORM repository with `jest.fn()` or a fake in-memory store.
 - E2e tests (Supertest) run against the real app; register `ValidationPipe` manually.
 - Keep test output pristine (no stray warnings); assertions must be non-vacuous.
 
@@ -174,4 +175,4 @@ Invoke these before starting any substantial task — never wait until after wri
 | Reviewing the current diff for bugs | `/code-review` command |
 | Cleanup: reuse / simplify / efficiency on changed code | `/simplify` command |
 | Confirm a change works by running the app | `/verify` or `/run` command |
-| Need current library/framework docs (NestJS, Prisma, class-validator…) | `find-docs` skill or `ctx7 docs <library-id>` |
+| Need current library/framework docs (NestJS, TypeORM, class-validator…) | `find-docs` skill or `ctx7 docs <library-id>` |
