@@ -116,3 +116,22 @@ with zero errors before reporting a task as complete.
 - Unit tests mock the Prisma service with `jest.fn()` or a fake in-memory store.
 - E2e tests (Supertest) run against the real app; register `ValidationPipe` manually.
 - Keep test output pristine (no stray warnings); assertions must be non-vacuous.
+
+## Skills, agents & commands
+
+Invoke these before starting any substantial task — never wait until after writing code.
+
+| When | Use |
+|---|---|
+| Starting a substantial feature (>~500 LOC / cross-cutting / ambiguous) | `spec-driven-implementation` skill — write PRODUCT.md/TECH.md first |
+| Before any creative/feature work — explore intent & design | `superpowers:brainstorming` skill |
+| Writing, reviewing, or refactoring NestJS modules, services, controllers, guards | `nestjs-best-practices` skill and/or `nestjs-code-architect` agent |
+| Node.js/TS backend patterns (layering, error handling, interceptors) | `nodejs-backend-patterns` skill |
+| Advanced TypeScript (generics, conditional types, DTOs, utility types) | `typescript-advanced-types` skill |
+| Architecture or SOLID decisions for the service layer | `clean-architecture` / `architecture-patterns` / `solid` skills |
+| Domain/business logic that should be test-first | `superpowers:test-driven-development` skill |
+| Debugging a non-obvious bug | `superpowers:systematic-debugging` skill |
+| Reviewing the current diff for bugs | `/code-review` command |
+| Cleanup: reuse / simplify / efficiency on changed code | `/simplify` command |
+| Confirm a change works by running the app | `/verify` or `/run` command |
+| Need current library/framework docs (NestJS, Prisma, class-validator…) | `find-docs` skill or `ctx7 docs <library-id>` |
